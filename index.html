@@ -30,7 +30,7 @@
             margin-bottom: 15px;
         }
         .btn-paste {
-            background-color: #8e8e93;
+            background-color: #34c759;
             color: white;
             padding: 12px;
             border: none;
@@ -38,9 +38,19 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: bold;
-            flex: 1; /* 讓貼上按鈕佔用一部分空間 */
+            flex: 1;
         }
-        .btn-paste:hover { background-color: #707074; }
+        .btn-clear {
+            background-color: #ff3b30;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            flex: 1;
+        }
         .btn-download { 
             background-color: #0071e3; 
             color: white; 
@@ -50,50 +60,47 @@
             cursor: pointer; 
             font-size: 16px; 
             font-weight: bold;
-            flex: 2; /* 讓下載按鈕寬一點 */
+            width: 100%;
         }
-        .btn-download:hover { background-color: #0077ed; }
         code { background-color: #e8e8ed; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
         .hint { color: #6e6e73; font-size: 14px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
     <h2>GPS 座標轉 GPX 檔案生成器</h2>
-    <p class="hint">請在下方貼上座標（每行一組，格式如：<code>25.0339, 121.5645</code>）</p>
+    <p class="hint">複製座標後，點擊下方綠色按鈕即可一鍵貼上並下載。</p>
     
-    <textarea id="coordinates" placeholder="12.87617, 78.98605&#10;12.87614, 78.98500&#10;12.87604, 78.98428"></textarea>
+    <textarea id="coordinates" placeholder="請在此貼上座標..."></textarea>
     
     <div class="btn-group">
-        <button class="btn-paste" onclick="pasteCoordinates()">📋 貼上座標</button>
-        <button class="btn-download" onclick="generateAndDownloadGPX()">產生並下載 GPX 檔</button>
+        <button class="btn-paste" onclick="doPaste()">📋 一鍵貼上座標</button>
+        <button class="btn-clear" onclick="document.getElementById('coordinates').value=''">🗑️ 清空內容</button>
     </div>
+    
+    <button class="btn-download" onclick="generateAndDownloadGPX()">產生並下載 GPX 檔</button>
 
     <script>
-        // 新增的貼上功能
-        async function pasteCoordinates() {
-            try {
-                // 讀取剪貼簿的文字
-                const text = await navigator.clipboard.readText();
-                if (text) {
-                    document.getElementById('coordinates').value = text;
-                } else {
-                    alert('剪貼簿裡面沒有文字喔！');
-                }
-            } catch (err) {
-                alert('無法讀取剪貼簿，請手動貼上，或檢查是否未允許網頁權限。');
-                console.error('無法讀取剪貼簿: ', err);
-            }
+        // 電腦版保證成功的標準寫法
+        function doPaste() {
+            navigator.clipboard.readText()
+                .then(text => {
+                    if (text) {
+                        document.getElementById('coordinates').value = text;
+                    } else {
+                        alert('你的剪貼簿裡好像沒有文字喔！');
+                    }
+                })
+                .catch(err => {
+                    alert('讀取失敗！請檢查瀏覽器網址左側的「鎖頭」圖示，確認是否有允許網頁「剪貼簿」權限。');
+                });
         }
 
         function generateAndDownloadGPX() {
             const text = document.getElementById('coordinates').value;
-            
-            // 使用正則表達式抓取每行的經緯度數字
             const regex = /([-+]?\d+\.\d+)[,\s]+([-+]?\d+\.\d+)/g;
             let matches;
             let wptElements = '';
             
-            // 循環比對所有符合的座標
             while ((matches = regex.exec(text)) !== null) {
                 const lat = matches[1];
                 const lon = matches[2];
@@ -101,11 +108,10 @@
             }
             
             if (wptElements === '') {
-                alert('找不到有效的座標，請檢查輸入格式是否正確！');
+                alert('找不到有效座標！');
                 return;
             }
             
-            // 組裝成特定 GPX 格式
             const gpxContent = `<?xml version="1.0" encoding="UTF-8" ?>
 <gpx>
     <iToolsData speed="260.0" link="https://www.thinkskysoft.com" loop="0">
@@ -113,7 +119,6 @@
     </iToolsData>
 ${wptElements}</gpx>`;
             
-            // 建立下載動作
             const blob = new Blob([gpxContent], { type: 'application/gpx+xml' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -121,9 +126,9 @@ ${wptElements}</gpx>`;
             a.download = 'route.gpx';
             document.body.appendChild(a);
             a.click();
-            
-            // 清理暫存
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
-    </
+    </script>
+</body>
+</html>
